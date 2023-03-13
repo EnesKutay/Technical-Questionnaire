@@ -1,0 +1,24 @@
+-- Calculate median daily vaccinations by country
+WITH median_vaccinations AS (
+  SELECT country, MEDIAN(daily_vaccinations) AS median_daily_vaccinations
+  FROM country_vaccination_stats
+  GROUP BY country
+)
+
+-- Impute missing daily vaccinations with median
+UPDATE country_vaccination_stats
+SET daily_vaccinations = (
+  SELECT COALESCE(daily_vaccinations, median_daily_vaccinations)
+  FROM median_vaccinations
+  WHERE country_vaccination_stats.country = median_vaccinations.country
+);
+
+-- Fill missing data with 0
+UPDATE country_vaccination_stats
+SET daily_vaccinations = 0
+WHERE daily_vaccinations IS NULL;
+
+-- Output the result to a new table
+CREATE TABLE output_country_vaccination_stats AS
+SELECT *
+FROM country_vaccination_stats;
